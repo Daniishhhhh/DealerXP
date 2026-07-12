@@ -37,10 +37,20 @@ class LeaderboardEngine:
 
     def get_current_duel(self, scoring_events: list[dict[str, Any]]) -> dict[str, Any]:
         team_scores = defaultdict(int)
+        best_user_totals: dict[str, dict[str, int]] = {"Dse": {}, "Finance": {}}
         for item in scoring_events:
             team = str(item.get("department", "")).strip().title()
             if team in {"Dse", "Finance"}:
-                team_scores[team] += int(item.get("points", 0))
+                points = int(item.get("points", 0))
+                user_id = str(item.get("user_id", "")).strip()
+                if user_id:
+                    previous_best = best_user_totals[team].get(user_id, 0)
+                    best_user_totals[team][user_id] = max(previous_best, points)
+                else:
+                    team_scores[team] += points
+
+        for team, user_totals in best_user_totals.items():
+            team_scores[team] += sum(user_totals.values())
 
         dse_score = team_scores.get("Dse", 0)
         finance_score = team_scores.get("Finance", 0)
