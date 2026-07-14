@@ -6,7 +6,7 @@ import { RelayBonusFlash } from '../components/booking/RelayBonusFlash';
 import { CapFiringIndicator } from '../components/booking/CapFiringIndicator';
 import { motion } from 'framer-motion';
 import { User, ShieldAlert, Sparkles, HelpCircle } from 'lucide-react';
-import { triggerRelayBonus, triggerNoteSpam, resetMockState } from '../api/client';
+import { triggerRelayBonus, triggerNoteSpam, resetMockState, getBookings, confirmBooking } from '../api/client';
 
 export default function BookingTimelinePage() {
   const [bookingId, setBookingId] = useState('b100');
@@ -15,10 +15,8 @@ export default function BookingTimelinePage() {
 
   useEffect(() => {
     const fetchBookings = () => {
-      import('../api/client').then(client => {
-        client.getBookings().then(list => {
-          setAllBookings(list);
-        });
+      getBookings().then(list => {
+        setAllBookings(list);
       });
     };
     fetchBookings();
@@ -182,9 +180,7 @@ export default function BookingTimelinePage() {
           {currentUserId === 'u3' && (
             <button
               onClick={() => {
-                import('../api/client').then(client => {
-                  client.confirmBooking(bookingId);
-                });
+                confirmBooking(bookingId);
               }}
               className="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-extrabold rounded-lg shadow-lg transition-all duration-200"
             >
