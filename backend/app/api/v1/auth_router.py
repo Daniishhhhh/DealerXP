@@ -20,37 +20,84 @@ class RegisterRequest(BaseModel):
 
 @router.post("/auth/login")
 def login(req: LoginRequest):
+    # Support mock login fallbacks for development convenience
+    if req.employee_id == "u3" and req.password == "admin123":
+        return {
+            "success": True,
+            "user_id": "u3",
+            "name": "Vikram",
+            "role": "Administrator",
+            "department": "ADMIN",
+            "branch": "YELAHANKA"
+        }
+    if req.employee_id == "u1" and req.password == "employee123":
+        return {
+            "success": True,
+            "user_id": "u1",
+            "name": "Asha",
+            "role": "Dealer Sales Executive",
+            "department": "SALES",
+            "branch": "YELAHANKA"
+        }
+    if req.employee_id == "u2" and req.password == "employee123":
+        return {
+            "success": True,
+            "user_id": "u2",
+            "name": "Rahul",
+            "role": "Finance Specialist",
+            "department": "FINANCE",
+            "branch": "BANASHANKARI"
+        }
 
-    employees = read_scoring_events()
+    # Verify credentials against the z_employees database
+    from app.data.csv_loader import load_employees
+    import pandas as pd
 
-    for emp in employees:
+    df_emp = load_employees()
+    df_emp["id"] = df_emp["id"].astype(str).str.strip()
+    target_id = req.employee_id.strip()
 
-        if emp["user_id"] != req.employee_id:
-            continue
+    emp_rows = df_emp[df_emp["id"] == target_id]
+    if emp_rows.empty:
+        # fallback lookup by name
+        emp_rows = df_emp[df_emp["name"].astype(str).str.lower() == target_id.lower()]
 
-        # Demo password
+    if not emp_rows.empty:
         if req.password != "dealer123":
             raise HTTPException(
                 status_code=401,
                 detail="Invalid password"
             )
 
-        role = emp.get("department", "")
+        emp = emp_rows.iloc[0]
+        dept = str(emp.get("department", "")).strip()
+        role_rights = str(emp.get("role_rights", "")).strip().lower()
+        designation = str(emp.get("designation", "")).strip().lower()
 
-        if role.lower() == "finance":
+        # Any designation containing manager or manager role_rights is considered Admin
+        is_manager = (
+            role_rights in {"manager", "admin"}
+            or "manager" in designation
+            or "director" in designation
+            or "chief" in designation
+            or "head" in designation
+        )
+
+        role = "Dealer Sales Executive"
+        if dept.lower() == "finance":
             role = "Finance Specialist"
-        elif role.lower() == "dse":
-            role = "Dealer Sales Executive"
-        elif role.lower() == "admin":
+
+        if is_manager:
             role = "Administrator"
+            dept = "ADMIN"
 
         return {
             "success": True,
-            "user_id": emp["user_id"],
-            "name": emp["employee_name"],
+            "user_id": str(emp["id"]),
+            "name": str(emp["name"]),
             "role": role,
-            "department": emp["department"],
-            "branch": emp["branch"]
+            "department": dept,
+            "branch": str(emp.get("reporting_location", "YELAHANKA"))
         }
 
     raise HTTPException(

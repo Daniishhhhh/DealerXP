@@ -6,7 +6,7 @@ import { RelayBonusFlash } from '../components/booking/RelayBonusFlash';
 import { CapFiringIndicator } from '../components/booking/CapFiringIndicator';
 import { motion } from 'framer-motion';
 import { User, ShieldAlert, Sparkles, HelpCircle } from 'lucide-react';
-import { triggerRelayBonus, triggerNoteSpam, resetMockState, getBookings, confirmBooking } from '../api/client';
+import { triggerRelayBonus, triggerNoteSpam, resetMockState, getBookings, confirmBooking, triggerCustomerReview } from '../api/client';
 
 export default function BookingTimelinePage() {
   const [bookingId, setBookingId] = useState('b100');
@@ -164,6 +164,13 @@ export default function BookingTimelinePage() {
           </button>
           <button
             type="button"
+            onClick={triggerCustomerReview}
+            className="px-4 py-2 bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-white text-xs font-bold rounded-lg shadow-lg hover:shadow-amber-500/20 transition-all duration-200"
+          >
+            ⭐ Simulate 5★ Customer Review
+          </button>
+          <button
+            type="button"
             onClick={handleReset}
             className="px-3 py-2 bg-red-50 hover:bg-red-100 dark:bg-red-950/40 dark:hover:bg-red-900/60 text-red-600 dark:text-red-400 text-xs font-bold rounded-lg border border-red-200 dark:border-red-900/50 transition-all duration-200"
           >
@@ -181,7 +188,7 @@ export default function BookingTimelinePage() {
               This booking request must be confirmed by the Branch Manager before the timeline can proceed.
             </p>
           </div>
-          {currentUserId === 'u3' && (
+          {['u3', '10688', 'SAM814', 'COO'].includes(currentUserId) && (
             <button
               onClick={() => {
                 confirmBooking(bookingId);

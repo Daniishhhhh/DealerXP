@@ -27,7 +27,7 @@ import {
   Moon,
   BarChart3
 } from 'lucide-react';
-import { triggerRelayBonus, triggerNoteSpam, resetMockState, getPendingBookings, getUserScore } from './api/client';
+import { triggerRelayBonus, triggerNoteSpam, resetMockState, getPendingBookings, getUserScore, triggerCustomerReview } from './api/client';
 
 import { LoginForm } from './components/dashboard/LoginForm';
 
@@ -47,7 +47,7 @@ function AppLayout({ children }) {
 
   useEffect(() => {
     const fetchPendingCount = () => {
-      if (userId === 'u3') {
+      if (['u3', '10688', 'SAM814', 'COO'].includes(userId)) {
         getPendingBookings()
           .then(res => {
             if (res && res.bookings) {
@@ -133,8 +133,8 @@ function AppLayout({ children }) {
     );
   }
 
-  const name = userProfile ? userProfile.name : (userId === 'u1' ? 'Asha' : (userId === 'u2' ? 'Rahul' : (userId === 'u3' ? 'Vikram' : 'Employee')));
-  const role = userProfile ? userProfile.role : (userId === 'u1' ? 'Sales DSE' : (userId === 'u2' ? 'Finance Specialist' : (userId === 'u3' ? 'Branch Manager' : 'DealerXP')));
+  const name = userProfile ? userProfile.name : (userId === '10688' ? 'AJEYA GOWDA' : (userId === 'SAM814' ? 'SAMPATH B' : (userId === 'COO' ? 'VIKAS GUPTA' : (userId === 'u3' ? 'Vikram' : (userId === 'u1' ? 'Asha' : (userId === 'u2' ? 'Rahul' : 'Employee'))))));
+  const role = userProfile ? userProfile.role : (['u3', '10688', 'SAM814', 'COO'].includes(userId) ? 'Branch Manager' : (userId === 'u2' ? 'Finance Specialist' : 'Sales DSE'));
   const initials = name.charAt(0).toUpperCase();
   const bg = role.includes("Finance") ? "bg-teal-500/20" : (role.includes("Manager") ? "bg-indigo-500/20" : "bg-brand-primary/20");
   const text = role.includes("Finance") ? "text-teal-600 dark:text-teal-400" : (role.includes("Manager") ? "text-indigo-600 dark:text-indigo-400" : "text-brand-primary");
@@ -164,9 +164,8 @@ function AppLayout({ children }) {
   ];
 
       const filteredNavItems = navItems.filter((item) => {
-  // Temporary: until backend user profile is loaded
-  const isAdmin = false;
-  const isFinance = false;
+  const isAdmin = role.toLowerCase().includes("manager") || role.toLowerCase().includes("admin");
+  const isFinance = role.toLowerCase().includes("finance");
 
   if (isAdmin) {
     return ["/admin", "/analytics"].includes(item.to);
@@ -320,6 +319,14 @@ function AppLayout({ children }) {
             className="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold rounded-lg border border-slate-700 transition-all duration-150"
           >
             ✍️ Add Note (Cap Firing)
+          </button>
+
+          <button
+            type="button"
+            onClick={triggerCustomerReview}
+            className="px-3.5 py-2 bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-white text-xs font-bold rounded-lg shadow-md hover:shadow-amber-500/20 transition-all duration-150 flex items-center gap-1"
+          >
+            ⭐ Simulate 5★ Review (Delight Multiplier)
           </button>
 
           <button

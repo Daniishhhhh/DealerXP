@@ -108,27 +108,57 @@ class LeaderboardEngine:
         }
 
     def _build_individual_response(self, scoring_events: list[dict[str, Any]]) -> dict[str, Any]:
+        try:
+            from app.data.csv_loader import load_employees
+            df_emp = load_employees()
+            df_emp["id"] = df_emp["id"].astype(str).str.strip()
+            manager_ids = set(
+                df_emp[
+                    df_emp['designation'].str.contains('Manager', case=False, na=False)
+                    | df_emp['role_rights'].str.contains('Manager', case=False, na=False)
+                    | df_emp['role_rights'].str.contains('Admin', case=False, na=False)
+                ]['id']
+            )
+        except Exception:
+            manager_ids = set()
+
         by_user: dict[str, dict[str, Any]] = {}
         for item in scoring_events:
             user_id = str(item.get("user_id", ""))
             if not user_id:
                 continue
             if user_id not in by_user:
+                dept = str(item.get("department", ""))
+                if user_id in manager_ids or user_id == "u3":
+                    dept = "ADMIN"
                 by_user[user_id] = {
                     "userId": user_id,
                     "name": str(item.get("employee_name", user_id)),
-                    "department": str(item.get("department", "")),
+                    "department": dept,
                     "branch": str(item.get("branch", "")),
                     "points": 0,
                     "level": 1,
-                    "badge": str(item.get("badge", "Bronze")),
+                    "badge": "Bronze",
                 }
             by_user[user_id]["points"] += int(item.get("points", 0))
 
-        for row in by_user.values():
-            row["level"] = GamificationEngine.level_for_xp(row["points"])   
-        ranked = sorted(by_user.values(), key=lambda row: row["points"], reverse=True)
+        all_users = list(by_user.values())
+        if all_users:
+            min_pts = min(row["points"] for row in all_users)
+            max_pts = max(row["points"] for row in all_users)
+            pts_range = max_pts - min_pts
 
+            for row in all_users:
+                if pts_range > 0:
+                    scaled = 80 + (row["points"] - min_pts) / pts_range * 440
+                    row["points"] = int(scaled)
+                else:
+                    row["points"] = 500
+
+                row["badge"] = self._get_tier_badge(row["points"])
+                row["level"] = GamificationEngine.level_for_xp(row["points"])
+
+        ranked = sorted(all_users, key=lambda row: row["points"], reverse=True)
         leaderboard = [{"rank": index + 1, **row} for index, row in enumerate(ranked)]
         return {
             "success": True,
@@ -179,15 +209,27 @@ class LeaderboardEngine:
                 reverse=True,
         )
 
-            leaderboard = [
-                {
-                "rank": index + 1,
-                "scopeId": key,
-                "name": key,
-                "points": points,
-            }
-            for index, (key, points) in enumerate(ranked)
-        ]
+            leaderboard = []
+            if ranked:
+                pts_list = [item[1] for item in ranked]
+                min_pts = min(pts_list)
+                max_pts = max(pts_list)
+                pts_range = max_pts - min_pts
+
+                for index, (key, points) in enumerate(ranked):
+                    if pts_range > 0:
+                        scaled = 80 + (points - min_pts) / pts_range * 440
+                        scaled_pts = int(scaled)
+                    else:
+                        scaled_pts = 500
+
+                    leaderboard.append({
+                        "rank": index + 1,
+                        "scopeId": key,
+                        "name": key,
+                        "points": scaled_pts,
+                        "badge": self._get_tier_badge(scaled_pts)
+                    })
 
         return {
         "success": True,
@@ -231,6 +273,21 @@ class LeaderboardEngine:
             return client
         except Exception:
             return None
+
+    @staticmethod
+    def _get_tier_badge(points: int) -> str:
+        if points < 100:
+            return "🪨 Iron"
+        elif points < 200:
+            return "🥉 Bronze"
+        elif points < 300:
+            return "🥈 Silver"
+        elif points < 400:
+            return "🟡 Gold"
+        elif points < 500:
+            return "💎 Platinum"
+        else:
+            return "💠 Diamond"
 
     @staticmethod
     def _utc_now() -> str:

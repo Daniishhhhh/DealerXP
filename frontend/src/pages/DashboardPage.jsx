@@ -21,18 +21,18 @@ import { useBadges } from "../hooks/useBadges";
 
 // Helper to determine rank tier based on points (same logic as ScoreCard)
 function getRankTier(points) {
-  if (points < 300) {
-    return { tier: 'Bronze', division: 'IV', emblem: '🥉', color: 'text-amber-600 dark:text-amber-500' };
-  } else if (points < 600) {
+  if (points < 100) {
+    return { tier: 'Iron', division: 'IV', emblem: '🪨', color: 'text-neutral-550 dark:text-neutral-400' };
+  } else if (points < 200) {
+    return { tier: 'Bronze', division: 'III', emblem: '🥉', color: 'text-amber-600 dark:text-amber-500' };
+  } else if (points < 300) {
     return { tier: 'Silver', division: 'III', emblem: '🥈', color: 'text-slate-500 dark:text-slate-350' };
-  } else if (points < 1000) {
-    return { tier: 'Gold', division: 'II', emblem: '🥇', color: 'text-yellow-600 dark:text-yellow-500' };
-  } else if (points < 1500) {
-    return { tier: 'Platinum', division: 'II', emblem: '💎', color: 'text-emerald-650 dark:text-teal-400' };
-  } else if (points < 2500) {
-    return { tier: 'Diamond', division: 'I', emblem: '💠', color: 'text-blue-600 dark:text-blue-300' };
+  } else if (points < 400) {
+    return { tier: 'Gold', division: 'II', emblem: '🟡', color: 'text-yellow-600 dark:text-yellow-500' };
+  } else if (points < 500) {
+    return { tier: 'Platinum', division: 'II', emblem: '💎', color: 'text-emerald-500 dark:text-emerald-400' };
   } else {
-    return { tier: 'Legendary', division: 'Apex', emblem: '👑', color: 'text-pink-650 dark:text-pink-400' };
+    return { tier: 'Diamond', division: 'I', emblem: '💠', color: 'text-blue-600 dark:text-blue-300' };
   }
 }
 

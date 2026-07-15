@@ -4,23 +4,36 @@ import { Trophy, ShieldAlert, Swords, Zap, Activity, Flame, ChevronRight, Award,
 
 // Helper to determine rank tier based on points
 function getRankTier(points) {
-  if (points < 300) {
-    const progress = (points / 300) * 100;
+  if (points < 100) {
+    const progress = (points / 100) * 100;
+    return {
+      tier: 'Iron',
+      division: 'IV',
+      color: 'from-neutral-600 via-neutral-700 to-neutral-900',
+      textColor: 'text-neutral-500 dark:text-neutral-400',
+      badgeBg: 'bg-neutral-500/10 border-neutral-500/20 text-neutral-700 dark:text-neutral-450',
+      glow: 'shadow-neutral-500/10',
+      nextTier: 'Bronze IV',
+      pointsToNext: 100 - points,
+      progress,
+      emblem: '🪨',
+    };
+  } else if (points < 200) {
+    const progress = ((points - 100) / 100) * 100;
     return {
       tier: 'Bronze',
-      division: 'IV',
+      division: 'III',
       color: 'from-amber-700 via-amber-800 to-amber-950',
       textColor: 'text-amber-600 dark:text-amber-500',
       badgeBg: 'bg-amber-500/10 border-amber-500/20 text-amber-700 dark:text-amber-500',
       glow: 'shadow-amber-500/10',
       nextTier: 'Silver IV',
-      pointsToNext: 300 - points,
+      pointsToNext: 200 - points,
       progress,
       emblem: '🥉',
     };
-  } else if (points < 600) {
-    const tierPoints = points - 300;
-    const progress = (tierPoints / 300) * 100;
+  } else if (points < 300) {
+    const progress = ((points - 200) / 100) * 100;
     return {
       tier: 'Silver',
       division: 'III',
@@ -29,13 +42,12 @@ function getRankTier(points) {
       badgeBg: 'bg-slate-500/10 border-slate-500/20 text-slate-600 dark:text-slate-300',
       glow: 'shadow-slate-400/10',
       nextTier: 'Gold IV',
-      pointsToNext: 600 - points,
+      pointsToNext: 300 - points,
       progress,
       emblem: '🥈',
     };
-  } else if (points < 1000) {
-    const tierPoints = points - 600;
-    const progress = (tierPoints / 400) * 100;
+  } else if (points < 400) {
+    const progress = ((points - 300) / 100) * 100;
     return {
       tier: 'Gold',
       division: 'II',
@@ -44,13 +56,12 @@ function getRankTier(points) {
       badgeBg: 'bg-yellow-500/10 border-yellow-500/20 text-yellow-700 dark:text-yellow-500',
       glow: 'shadow-yellow-500/20',
       nextTier: 'Platinum IV',
-      pointsToNext: 1000 - points,
+      pointsToNext: 400 - points,
       progress,
-      emblem: '🥇',
+      emblem: '🟡',
     };
-  } else if (points < 1500) {
-    const tierPoints = points - 1000;
-    const progress = (tierPoints / 500) * 100;
+  } else if (points < 500) {
+    const progress = ((points - 400) / 100) * 100;
     return {
       tier: 'Platinum',
       division: 'II',
@@ -59,13 +70,12 @@ function getRankTier(points) {
       badgeBg: 'bg-emerald-500/10 border-emerald-500/20 text-emerald-700 dark:text-emerald-300',
       glow: 'shadow-emerald-500/20',
       nextTier: 'Diamond IV',
-      pointsToNext: 1500 - points,
+      pointsToNext: 500 - points,
       progress,
       emblem: '💎',
     };
-  } else if (points < 2500) {
-    const tierPoints = points - 1500;
-    const progress = (tierPoints / 1000) * 100;
+  } else {
+    const progress = Math.min(100, ((points - 500) / 100) * 100);
     return {
       tier: 'Diamond',
       division: 'I',
@@ -73,23 +83,10 @@ function getRankTier(points) {
       textColor: 'text-blue-600 dark:text-blue-300',
       badgeBg: 'bg-blue-500/10 border-blue-500/20 text-blue-700 dark:text-blue-300',
       glow: 'shadow-indigo-500/20',
-      nextTier: 'Legendary',
-      pointsToNext: 2500 - points,
+      nextTier: 'Challenger',
+      pointsToNext: 0,
       progress,
       emblem: '💠',
-    };
-  } else {
-    return {
-      tier: 'Legendary',
-      division: 'Apex',
-      color: 'from-purple-600 via-pink-500 to-red-500',
-      textColor: 'text-pink-600 dark:text-pink-400',
-      badgeBg: 'bg-pink-500/10 border-pink-500/20 text-pink-700 dark:text-pink-400',
-      glow: 'shadow-pink-500/30',
-      nextTier: 'Apex Challenger',
-      pointsToNext: 0,
-      progress: 100,
-      emblem: '👑',
     };
   }
 }

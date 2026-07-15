@@ -4,11 +4,11 @@
 
 const STORAGE_KEY_PREFIX = 'dealerxp_';
 const API_BASE = '/api/v1'; // Routed via Vite proxy to backend
-
 const defaultState = {
   score: {
-    u1: { userId: "u1", name: "Asha", points: 1240, streakDays: 5, capsActive: [], role: "Sales DSE", branch: "YELAHANKA" },
-    u2: { userId: "u2", name: "Rahul (Finance)", points: 980, streakDays: 4, capsActive: [], role: "Finance Specialist", branch: "BANASHANKARI" }
+    u1: { userId: "u1", name: "Asha", points: 520, streakDays: 5, capsActive: [], role: "Sales DSE", branch: "YELAHANKA" },
+    u2: { userId: "u2", name: "Rahul (Finance)", points: 340, streakDays: 4, capsActive: [], role: "Finance Specialist", branch: "BANASHANKARI" },
+    u3: { userId: "u3", name: "Vikram", points: 500, streakDays: 6, capsActive: [], role: "Branch Manager", branch: "YELAHANKA" }
   },
   badges: {
     u1: {
@@ -125,14 +125,22 @@ const defaultState = {
 
 function loadState() {
   const data = localStorage.getItem(STORAGE_KEY_PREFIX + 'state');
+  let state = JSON.parse(JSON.stringify(defaultState));
   if (data) {
     try {
-      return JSON.parse(data);
+      const parsed = JSON.parse(data);
+      state = {
+        ...state,
+        ...parsed,
+        score: { ...state.score, ...parsed.score },
+        quests: parsed.quests || state.quests,
+        timeline: { ...state.timeline, ...parsed.timeline }
+      };
     } catch (e) {
       console.error("Error loading mock state", e);
     }
   }
-  return JSON.parse(JSON.stringify(defaultState));
+  return state;
 }
 
 function saveState(state) {
@@ -262,6 +270,15 @@ export function triggerNoteSpam() {
 // API Methods
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
+export function getTierBadge(points) {
+  if (points < 100) return "🪨 Iron";
+  if (points < 200) return "🥉 Bronze";
+  if (points < 300) return "🥈 Silver";
+  if (points < 400) return "🟡 Gold";
+  if (points < 500) return "💎 Platinum";
+  return "💠 Diamond";
+}
+
 export async function getUserScore(userId) {
   try {
     const res = await fetch(`${API_BASE}/leaderboard?scope=individual`);
@@ -270,14 +287,22 @@ export async function getUserScore(userId) {
       if (data.success && Array.isArray(data.leaderboard)) {
         const found = data.leaderboard.find(item => isCurrentUser(item.name, item.userId));
         if (found) {
+          const state = loadState();
+          const localPoints = state.score[userId]?.points || 0;
+          const defaultPoints = defaultState.score[userId]?.points || 0;
+          const delta = localPoints - defaultPoints;
+          const finalPoints = found.points + delta;
+
           return {
             userId: found.userId,
             name: found.name,
-            points: found.points,
+            points: finalPoints,
             streakDays: 5,
-            capsActive: [],
-            role: found.department.toLowerCase().includes('finance') ? 'Finance Specialist' : 'Sales DSE',
-            branch: found.branch || 'YELAHANKA'
+            capsActive: state.score[userId]?.capsActive || [],
+            role: found.department.toLowerCase().includes('admin') ? 'Branch Manager' : (found.department.toLowerCase().includes('finance') ? 'Finance Specialist' : 'Sales DSE'),
+            branch: found.branch || 'YELAHANKA',
+            badge: getTierBadge(finalPoints),
+            delightMultiplier: state.score[userId]?.delightMultiplier || 1.0
           };
         }
       }
@@ -287,7 +312,21 @@ export async function getUserScore(userId) {
   }
   await delay(100);
   const state = loadState();
-  return state.score[userId] || { userId, points: 0, streakDays: 0, capsActive: [], role: userId === 'u2' ? 'Finance Specialist' : 'Sales DSE', branch: userId === 'u2' ? 'BANASHANKARI' : 'YELAHANKA' };
+  const isManager = userId === 'u3' || userId === '10688' || userId === 'SAM814' || userId === 'COO';
+  const profile = state.score[userId] || { 
+    userId, 
+    name: userId === '10688' ? 'AJEYA GOWDA' : (userId === 'SAM814' ? 'SAMPATH B' : (userId === 'COO' ? 'VIKAS GUPTA' : (userId === 'u3' ? 'Vikram' : (userId === 'u2' ? 'Rahul' : 'Asha')))),
+    points: isManager ? 500 : (userId === 'u2' ? 340 : 520), 
+    streakDays: isManager ? 6 : (userId === 'u2' ? 4 : 5), 
+    capsActive: [], 
+    role: isManager ? 'Branch Manager' : (userId === 'u2' ? 'Finance Specialist' : 'Sales DSE'), 
+    branch: userId === 'u2' ? 'BANASHANKARI' : 'YELAHANKA', 
+    delightMultiplier: 1.0 
+  };
+  return {
+    ...profile,
+    badge: getTierBadge(profile.points)
+  };
 }
 
 export async function getUserBadges(userId) {
@@ -325,15 +364,39 @@ export async function getLeaderboard(scope = 'individual') {
     if (res.ok) {
       const data = await res.json();
       if (data.success && Array.isArray(data.leaderboard)) {
-        return {
-          scope,
-          rows: data.leaderboard.map(item => ({
+        const state = loadState();
+        const rows = data.leaderboard.map(item => {
+          let extra = 0;
+          if (scope === 'individual') {
+            const isU1 = item.name.toLowerCase().includes('asha');
+            const isU2 = item.name.toLowerCase().includes('rahul');
+            const targetUser = isU1 ? 'u1' : (isU2 ? 'u2' : null);
+            if (targetUser) {
+              const localPoints = state.score[targetUser]?.points || 0;
+              const defaultPoints = defaultState.score[targetUser]?.points || 0;
+              extra = localPoints - defaultPoints;
+            }
+          }
+          const finalPoints = item.points + extra;
+          return {
             rank: item.rank,
             name: item.name || item.scopeId,
-            points: item.points,
+            points: finalPoints,
+            badge: getTierBadge(finalPoints),
             branch: item.branch || item.scopeId || 'Mumbai Central',
             isMe: scope === 'individual' ? isCurrentUser(item.name, item.userId) : false
-          }))
+          };
+        });
+
+        // Re-sort in case local delta shifts rankings
+        rows.sort((a, b) => b.points - a.points);
+        rows.forEach((row, idx) => {
+          row.rank = idx + 1;
+        });
+
+        return {
+          scope,
+          rows
         };
       }
     }
@@ -342,9 +405,36 @@ export async function getLeaderboard(scope = 'individual') {
   }
   await delay(100);
   const state = loadState();
+  const rawRows = state.leaderboard[scope] || [];
+  
+  let scaledRows = [];
+  if (rawRows.length > 0) {
+    const ptsList = rawRows.map(r => r.points);
+    const minPts = Math.min(...ptsList);
+    const maxPts = Math.max(...ptsList);
+    const ptsRange = maxPts - minPts;
+    
+    scaledRows = rawRows.map((r, idx) => {
+      let scaledPts = 500;
+      if (ptsRange > 0) {
+        scaledPts = Math.round(80 + (r.points - minPts) / ptsRange * 440);
+      }
+      return {
+        ...r,
+        points: scaledPts,
+        badge: getTierBadge(scaledPts)
+      };
+    });
+    
+    scaledRows.sort((a, b) => b.points - a.points);
+    scaledRows.forEach((r, idx) => {
+      r.rank = idx + 1;
+    });
+  }
+  
   return {
     scope,
-    rows: state.leaderboard[scope] || []
+    rows: scaledRows
   };
 }
 
@@ -627,12 +717,29 @@ export async function progressBookingStage(bookingId, stageKey) {
   booking.stages = booking.stages.map(s => s.key === stageKey ? { ...s, done: true, at: new Date().toISOString() } : s);
   
   const actionWeight = state.weights.find(w => w.action === stageKey);
-  const points = actionWeight ? actionWeight.points : 50;
+  let points = actionWeight ? actionWeight.points : 50;
 
   const isFinance = ["FINANCE_APPROVED", "INVOICE_APPROVED"].includes(stageKey);
   const targetUser = isFinance ? "u2" : (booking.requestedBy || "u1");
   
   if (state.score[targetUser]) {
+    // Apply Customer Delight Multiplier on next DELIVERED action
+    if (stageKey === "DELIVERED" && state.score[targetUser].delightMultiplier > 1.0) {
+      const mult = state.score[targetUser].delightMultiplier;
+      const oldPoints = points;
+      points = Math.round(points * mult);
+      state.score[targetUser].delightMultiplier = 1.0; // Reset
+      
+      booking.events.push({
+        id: "delight_" + Date.now(),
+        type: "DELIGHT_APPLIED",
+        action: "DELIVERED",
+        points: points - oldPoints,
+        timestamp: new Date().toISOString(),
+        message: `Customer Delight Multiplier applied: ${mult}x (+${points - oldPoints} RP)`
+      });
+    }
+
     state.score[targetUser].points += points;
 
     state.leaderboard.individual = state.leaderboard.individual.map(row => {
@@ -738,6 +845,37 @@ export async function approveRouletteItem(id) {
     });
   }
 
+  saveState(state);
+  window.dispatchEvent(new CustomEvent('dealerxp_update'));
+  return { success: true };
+}
+
+export async function triggerCustomerReview() {
+  await delay(100);
+  const state = loadState();
+  const activeUserId = localStorage.getItem('dealerxp_user_id') || 'u1';
+  
+  if (state.score[activeUserId]) {
+    // Set 1.05x Customer Delight multiplier
+    state.score[activeUserId].delightMultiplier = 1.05;
+    
+    // Append customer review event to all active timelines for visibility
+    const bookingIds = Object.keys(state.timeline);
+    if (bookingIds.length > 0) {
+      const booking = state.timeline[bookingIds[0]];
+      booking.events.push({
+        id: 'review_' + Date.now(),
+        type: 'CUSTOMER_REVIEW_SUBMITTED',
+        action: 'CUSTOMER_REVIEW_SUBMITTED',
+        points: 0,
+        timestamp: new Date().toISOString(),
+        rating: 5,
+        user_id: activeUserId,
+        message: 'Customer submitted a 5★ review! 1.05x Delight Multiplier active for next sale.'
+      });
+    }
+  }
+  
   saveState(state);
   window.dispatchEvent(new CustomEvent('dealerxp_update'));
   return { success: true };
