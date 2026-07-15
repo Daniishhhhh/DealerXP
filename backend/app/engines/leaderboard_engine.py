@@ -1,4 +1,6 @@
 from __future__ import annotations
+from app.engines.gamification_engine import GamificationEngine
+from app.services.department_service import DepartmentService
 
 import json
 import os
@@ -12,6 +14,9 @@ class LeaderboardEngine:
         self.cache_ttl_seconds = cache_ttl_seconds
         self._cache: dict[str, tuple[datetime, dict[str, Any]]] = {}
         self._redis = self._build_redis_client()
+
+    # NEW
+        self.department_service = DepartmentService()
 
     def get_leaderboard(self, scope: str, scoring_events: list[dict[str, Any]]) -> dict[str, Any]:
         cache_key = f"leaderboard:{scope}"
@@ -36,47 +41,45 @@ class LeaderboardEngine:
         return payload
 
     def get_current_duel(self, scoring_events: list[dict[str, Any]]) -> dict[str, Any]:
-        team_scores = defaultdict(int)
-        for item in scoring_events:
-            team = str(item.get("department", "")).strip().title()
-            if team in {"Dse", "Finance"}:
-                team_scores[team] += int(item.get("points", 0))
-
-        dse_score = team_scores.get("Dse", 0)
-        finance_score = team_scores.get("Finance", 0)
-        winner = "Draw"
-        if dse_score > finance_score:
-            winner = "DSE"
-        elif finance_score > dse_score:
-            winner = "Finance"
-
         utc_now = datetime.now(tz=timezone.utc)
-        remaining_hours = max(0, 24 - utc_now.hour - 1)
-        return {
-            "success": True,
-            "duel": {
-                "id": "DUEL001",
-                "teamA": "DSE",
-                "teamB": "Finance",
-                "teamAScore": dse_score,
-                "teamBScore": finance_score,
-                "winner": winner,
-                "remainingHours": remaining_hours,
-            },
-        }
 
+        remaining_hours = max(
+        0,
+        24 - utc_now.hour - 1
+    )
+
+        match = self.department_service.featured_match(
+        scoring_events
+    )
+
+        return {
+        "success": True,
+        "duel": {
+            "id": "MATCH001",
+            **match,
+            "remainingHours": remaining_hours,
+        },
+    }   
     def get_daily_quests(self, user_id: str, scoring_events: list[dict[str, Any]]) -> dict[str, Any]:
         today = datetime.now(tz=timezone.utc).date()
         user_events = [
             item
             for item in scoring_events
             if str(item.get("user_id")) == user_id
-            and self._to_datetime(item.get("occurred_at")).date() == today
+            and self._to_datetime(item.get("timestamp")).date() == today
         ]
 
         booking_progress = sum(1 for item in user_events if str(item.get("action")) == "BOOKING_CONFIRMED")
         relay_progress = sum(1 for item in user_events if str(item.get("action")) == "ZERO_REWORK_BOOKING_BONUS")
         follow_up_progress = sum(1 for item in user_events if str(item.get("action")) == "FOLLOW_UP_COMPLETED")
+        print (
+            f"[QUEST DEBUG] user={user_id}, "
+            f"events_today={len(user_events)}, "
+            f"booking={booking_progress}, "
+            f"followup={follow_up_progress}, "
+            f"relay={relay_progress}"
+)
+        
         return {
             "success": True,
             "quests": [
@@ -113,17 +116,19 @@ class LeaderboardEngine:
             if user_id not in by_user:
                 by_user[user_id] = {
                     "userId": user_id,
-                    "name": str(item.get("name", user_id)),
+                    "name": str(item.get("employee_name", user_id)),
                     "department": str(item.get("department", "")),
                     "branch": str(item.get("branch", "")),
                     "points": 0,
-                    "level": int(item.get("level", 1)),
+                    "level": 1,
                     "badge": str(item.get("badge", "Bronze")),
                 }
             by_user[user_id]["points"] += int(item.get("points", 0))
-            by_user[user_id]["level"] = max(by_user[user_id]["level"], int(item.get("level", 1)))
 
+        for row in by_user.values():
+            row["level"] = GamificationEngine.level_for_xp(row["points"])   
         ranked = sorted(by_user.values(), key=lambda row: row["points"], reverse=True)
+
         leaderboard = [{"rank": index + 1, **row} for index, row in enumerate(ranked)]
         return {
             "success": True,
@@ -132,24 +137,57 @@ class LeaderboardEngine:
             "leaderboard": leaderboard,
         }
 
-    def _build_grouped_response(self, scope: str, scoring_events: list[dict[str, Any]]) -> dict[str, Any]:
-        grouped = defaultdict(int)
-        for item in scoring_events:
-            key = str(item.get(scope, "")).strip()
-            if key:
-                grouped[key] += int(item.get("points", 0))
-        ranked = sorted(grouped.items(), key=lambda row: row[1], reverse=True)
-        leaderboard = [
-            {"rank": index + 1, "scopeId": key, "name": key, "points": points}
+    def _build_grouped_response(
+    self,
+    scope: str,
+    scoring_events: list[dict[str, Any]],) -> dict[str, Any]:
+        if scope == "department":
+            ranked = self.department_service.ranked_departments(
+                scoring_events
+        )
+
+            leaderboard = [
+                {
+                    "rank": item["rank"],
+                    "scopeId": item["department"],
+                "name": item["department"],
+                "points": item["points"],
+                }
+                for item in ranked
+        ]
+
+        else:
+            grouped = defaultdict(int)
+            
+            
+            for item in scoring_events:
+                key = str(item.get(scope, "")).strip()
+
+                if key:
+                    grouped[key] += int(item.get("points", 0))
+
+            ranked = sorted(
+                grouped.items(),
+                key=lambda row: row[1],
+                reverse=True,
+        )
+
+            leaderboard = [
+                {
+                "rank": index + 1,
+                "scopeId": key,
+                "name": key,
+                "points": points,
+            }
             for index, (key, points) in enumerate(ranked)
         ]
-        return {
-            "success": True,
-            "scope": scope,
-            "lastUpdated": self._utc_now(),
-            "leaderboard": leaderboard,
-        }
 
+        return {
+        "success": True,
+        "scope": scope,
+        "lastUpdated": self._utc_now(),
+        "leaderboard": leaderboard,
+    }
     def _get_cache(self, key: str) -> dict[str, Any] | None:
         if self._redis is not None:
             cached = self._redis.get(key)

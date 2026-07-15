@@ -3,11 +3,12 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from backend.app.engines.gamification_engine import GamificationEngine
-from backend.app.engines.leaderboard_engine import LeaderboardEngine
-from backend.app.services.action_catalog_service import ActionCatalogService
-from backend.app.services.analytics_service import AnalyticsService
-from backend.app.services.notification_service import NotificationService
+from app.engines.gamification_engine import GamificationEngine
+from app.engines.leaderboard_engine import LeaderboardEngine
+from app.services.action_catalog_service import ActionCatalogService
+from app.services.analytics_service import AnalyticsService
+from app.services.notification_service import NotificationService
+from functools import lru_cache
 
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
@@ -32,7 +33,7 @@ mock_scoring_events: list[dict[str, Any]] = [
         "badge": "Gold",
         "level": 9,
         "points": 540,
-        "occurred_at": "2026-07-12T10:00:00Z",
+        "timestamp": "2026-07-12T10:00:00Z",
     },
     {
         "action": "FINANCE_APPROVED",
@@ -44,7 +45,7 @@ mock_scoring_events: list[dict[str, Any]] = [
         "badge": "Silver",
         "level": 8,
         "points": 620,
-        "occurred_at": "2026-07-12T10:40:00Z",
+        "timestamp": "2026-07-12T10:40:00Z",
     },
     {
         "action": "DELIVERED",
@@ -56,7 +57,7 @@ mock_scoring_events: list[dict[str, Any]] = [
         "badge": "Gold",
         "level": 9,
         "points": 660,
-        "occurred_at": "2026-07-12T12:00:00Z",
+        "timestamp": "2026-07-12T12:00:00Z",
     },
     {
         "action": "ZERO_REWORK_BOOKING_BONUS",
@@ -68,18 +69,36 @@ mock_scoring_events: list[dict[str, Any]] = [
         "badge": "Silver",
         "level": 8,
         "points": 800,
-        "occurred_at": "2026-07-12T12:01:00Z",
+        "timestamp": "2026-07-12T12:01:00Z",
     },
 ]
 
 
-def get_scoring_events() -> list[dict[str, Any]]:
+from functools import lru_cache
+
+
+@lru_cache(maxsize=1)
+def _cached_events():
+    from app.engines.scoring_engine import read_scoring_events
+
+    return read_scoring_events()
+
+
+@lru_cache(maxsize=1)
+def _cached_scoring_events():
     try:
-        from backend.app.engines.scoring_engine import read_scoring_events  # type: ignore
+        from app.engines.scoring_engine import read_scoring_events
 
         loaded = read_scoring_events()
+
         if isinstance(loaded, list) and loaded:
             return loaded
+
     except Exception:
         pass
+
     return list(mock_scoring_events)
+
+
+def get_scoring_events():
+    return list(_cached_scoring_events())

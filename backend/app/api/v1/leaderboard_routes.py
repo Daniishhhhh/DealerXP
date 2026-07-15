@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Query
 
-from backend.app.services.runtime_state import get_scoring_events, leaderboard_engine
+from app.services.runtime_state import get_scoring_events, leaderboard_engine
 
 
 router = APIRouter(tags=["leaderboard"])

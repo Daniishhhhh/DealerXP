@@ -4,7 +4,7 @@ import { useBadges } from '../hooks/useBadges';
 import { User, Award, Flame, Mail, MapPin, Calendar } from 'lucide-react';
 
 export default function ProfilePage() {
-  const userId = localStorage.getItem('dealerxp_user_id') || 'u1';
+  const userId = localStorage.getItem("dealerxp_user_id") || "BAA6879";
   const { data: score, loading: scoreLoading } = useScore(userId);
   const { data: badges, loading: badgesLoading } = useBadges(userId);
 

@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from backend.app.services.action_catalog_service import ActionCatalogService
+from app.services.action_catalog_service import ActionCatalogService
 
 
 class AnalyticsService:
@@ -43,7 +43,7 @@ class AnalyticsService:
                         "user_id": row.get("user_id", ""),
                         "department": row.get("department", ""),
                         "branch": row.get("branch", ""),
-                        "occurred_at": row.get("timestamp", ""),
+                        "timestamp": row.get("timestamp", ""),
                     }
                 )
         return events
@@ -54,7 +54,7 @@ class AnalyticsService:
         for item in events:
             booking_id = str(item.get("booking_id", ""))
             action = str(item.get("action", ""))
-            ts = AnalyticsService._to_datetime(item.get("occurred_at"))
+            ts = AnalyticsService._to_datetime(item.get("timestamp"))
             if action == "BOOKING_CREATED":
                 by_booking[booking_id].setdefault("start", ts)
             if action == "DELIVERED":

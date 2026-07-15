@@ -1,7 +1,7 @@
 from pathlib import Path
 
-from backend.app.engines.gamification_engine import GamificationEngine
-from backend.app.services.action_catalog_service import ActionCatalogService
+from app.engines.gamification_engine import GamificationEngine
+from app.services.action_catalog_service import ActionCatalogService
 
 
 def test_next_scoring_call_uses_updated_weight(tmp_path: Path) -> None:
@@ -22,7 +22,7 @@ def test_next_scoring_call_uses_updated_weight(tmp_path: Path) -> None:
             "action": "BOOKING_CREATED",
             "user_id": "USR001",
             "booking_id": "BLR-100",
-            "occurred_at": "2026-07-12T08:00:00Z",
+            "timestamp": "2026-07-12T08:00:00Z",
         }
     )
     assert first.points == 30
@@ -33,7 +33,7 @@ def test_next_scoring_call_uses_updated_weight(tmp_path: Path) -> None:
             "action": "BOOKING_CREATED",
             "user_id": "USR001",
             "booking_id": "BLR-101",
-            "occurred_at": "2026-07-12T08:10:00Z",
+            "timestamp": "2026-07-12T08:10:00Z",
         }
     )
     assert second.points == 75

@@ -1,6 +1,25 @@
 // API Client for DealerXP - Developer 3
 // Stubbed for mock-first development (Hour 0-10) and ready for live swap (Hour 10+)
 // Stores local state in memory/localStorage to allow interactive demo triggers.
+const API_BASE = "http://127.0.0.1:8000/api/v1";
+
+async function api(path, options = {}) {
+    const response = await fetch(`${API_BASE}${path}`, {
+        headers: {
+            "Content-Type": "application/json",
+        },
+        ...options,
+    });
+
+    if (!response.ok) {
+        throw new Error(`API Error: ${response.status}`);
+    }
+
+    return response.json();
+}
+
+
+
 
 const STORAGE_KEY_PREFIX = 'dealerxp_';
 
@@ -238,24 +257,22 @@ export function triggerNoteSpam() {
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 export async function getUserScore(userId) {
-  await delay(100);
-  const state = loadState();
-  return state.score[userId] || { userId, points: 0, streakDays: 0, capsActive: [] };
+    return await api(`/users/${userId}`);
 }
 
 export async function getUserBadges(userId) {
-  await delay(100);
-  const state = loadState();
-  return state.badges[userId] || { earned: [], inProgress: [] };
+    return await api(`/users/${userId}/badges`);
 }
 
-export async function getLeaderboard(scope = 'individual') {
-  await delay(100);
-  const state = loadState();
-  return {
-    scope,
-    rows: state.leaderboard[scope] || []
-  };
+
+export async function getLeaderboard(scope = "individual") {
+
+    const data = await api(`/leaderboard?scope=${scope}`);
+
+    return {
+        scope: data.scope,
+        rows: data.leaderboard
+    };
 }
 
 export async function getDailyQuests() {
@@ -438,4 +455,20 @@ export async function progressBookingStage(bookingId, stageKey) {
   saveState(state);
   window.dispatchEvent(new CustomEvent('dealerxp_update'));
   return { success: true };
+}
+export async function login(employeeId, password) {
+  return api("/auth/login", {
+    method: "POST",
+    body: JSON.stringify({
+      employee_id: employeeId,
+      password
+    })
+  });
+}
+
+export async function registerUser(payload) {
+  return api("/auth/register", {
+    method: "POST",
+    body: JSON.stringify(payload)
+  });
 }

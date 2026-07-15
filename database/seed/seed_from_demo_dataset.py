@@ -73,7 +73,7 @@ def to_payload(row: dict) -> dict:
     Raw-action payload sent to /actions/ingest. Matches the current CSV columns
     (booking_id, action, user_id, department, branch, timestamp). Re-check this
     mapping against Dev 1's actual ingest contract once it exists -- this is the
-    field-name-mismatch issue flagged separately (occurred_at/name vs
+    field-name-mismatch issue flagged separately (timestamp/name vs
     timestamp/employee_name in the docs).
     """
     return {

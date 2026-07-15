@@ -14,6 +14,7 @@ from app.services.action_catalog_service import ActionCatalogService
 
 BASE_DIR = Path(__file__).resolve().parents[2]
 CATALOG_PATH = BASE_DIR.parent / "shared" / "action_catalog.json"
+catalog_service = ActionCatalogService(CATALOG_PATH)
 
 SCORING_FIELDS = (
     "event_id",
@@ -36,7 +37,7 @@ def read_scoring_events() -> list[dict]:
     processed_events = process_events(events, employees, locations)
     booking_timelines = build_booking_timelines(processed_events)
 
-    catalog_service = ActionCatalogService(CATALOG_PATH)
+    
 
     scoring_events: list[dict] = []
 

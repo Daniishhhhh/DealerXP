@@ -79,6 +79,10 @@
     {
       "action": "ZERO_REWORK_BOOKING_BONUS",
       "weight": 140
+    },
+    {
+      "action": "string",
+      "weight": 0
     }
   ]
 }

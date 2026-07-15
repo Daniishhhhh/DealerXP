@@ -91,9 +91,9 @@ function AppLayout({ children }) {
     window.dispatchEvent(new CustomEvent('dealerxp_update'));
   };
 
-  const handleLogin = (id) => {
-    localStorage.setItem('dealerxp_user_id', id);
-    setUserId(id);
+ const handleLogin = (userId) => {
+    localStorage.setItem("dealerxp_user_id", userId);
+    setUserId(userId);
     window.dispatchEvent(new CustomEvent('dealerxp_update'));
   };
 
@@ -111,49 +111,16 @@ function AppLayout({ children }) {
     );
   }
 
-  const stateStr = localStorage.getItem('dealerxp_state');
-  let name = 'Asha';
-  let role = 'Sales DSE';
-  let initials = 'A';
-  let bg = 'bg-brand-primary/20';
-  let text = 'text-brand-primary';
+  const currentUser = {
+    name: "Employee",
+    role: "DealerXP",
+    initials: "E",
+    bg: "bg-brand-primary/20",
+    text: "text-brand-primary"
+};
 
-  if (userId === 'u3') {
-    name = 'Vikram';
-    role = 'Branch Manager (Admin)';
-    initials = 'V';
-    bg = 'bg-red-500/20';
-    text = 'text-red-500';
-  } else if (userId === 'u2') {
-    name = 'Rahul';
-    role = 'Finance Specialist';
-    initials = 'R';
-    bg = 'bg-orange-500/20';
-    text = 'text-orange-500';
-  } else if (userId === 'u1') {
-    name = 'Asha';
-    role = 'Sales DSE';
-    initials = 'A';
-    bg = 'bg-brand-primary/20';
-    text = 'text-brand-primary';
-  } else if (stateStr) {
-    try {
-      const state = JSON.parse(stateStr);
-      const userScoreObj = state.score[userId];
-      if (userScoreObj) {
-        name = userScoreObj.name;
-        role = userScoreObj.role || 'Sales DSE';
-        initials = name.charAt(0).toUpperCase();
-        const isFinance = role.toLowerCase().includes('finance');
-        bg = isFinance ? 'bg-orange-500/20' : 'bg-brand-primary/20';
-        text = isFinance ? 'text-orange-500' : 'text-brand-primary';
-      }
-    } catch (e) {
-      console.error(e);
-    }
-  }
 
-  const currentUser = { name, role, initials, bg, text };
+
 
   const navItems = [
     { to: '/dashboard', label: 'Dashboard', icon: <LayoutDashboard className="w-5 h-5" /> },
@@ -168,30 +135,30 @@ function AppLayout({ children }) {
     { to: '/analytics', label: 'Analytics', icon: <BarChart3 className="w-5 h-5 text-amber-400" /> },
   ];
 
-  const filteredNavItems = navItems.filter(item => {
-    const isAdmin = userId === 'u3' || role.toLowerCase().includes('admin');
-    
-    if (isAdmin) {
-      // Admin should ONLY see Admin Console and Analytics
-      return ['/admin', '/analytics'].includes(item.to);
-    } else {
-      // Employees should NEVER see Admin Console or Analytics
-      if (['/admin', '/analytics'].includes(item.to)) {
-        return false;
-      }
-      
-      // Filter out workspaces that don't match the employee's role
-      const isFinance = role.toLowerCase().includes('finance');
-      if (isFinance && item.to === '/dse-dashboard') {
-        return false;
-      }
-      if (!isFinance && item.to === '/finance-dashboard') {
-        return false;
-      }
-    }
-    return true;
-  });
+      const filteredNavItems = navItems.filter((item) => {
+  // Temporary: until backend user profile is loaded
+  const isAdmin = false;
+  const isFinance = false;
 
+  if (isAdmin) {
+    return ["/admin", "/analytics"].includes(item.to);
+  }
+
+  if (["/admin", "/analytics"].includes(item.to)) {
+    return false;
+  }
+
+  if (isFinance && item.to === "/dse-dashboard") {
+    return false;
+  }
+
+  if (!isFinance && item.to === "/finance-dashboard") {
+    return false;
+  }
+
+  return true;
+});
+     
   return (
     <div className="min-h-screen flex flex-col md:flex-row bg-bg-surface dark:bg-slate-950 font-body text-neutral-800 dark:text-slate-200 transition-colors duration-200">
       

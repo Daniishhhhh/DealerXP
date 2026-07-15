@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from datetime import date, datetime, timedelta, timezone
 from typing import Any
 
-from backend.app.services.action_catalog_service import ActionCatalogService
+from app.services.action_catalog_service import ActionCatalogService
 
 
 MASS_UPDATE_ACTIONS = {
@@ -46,7 +46,7 @@ class GamificationEngine:
     ) -> ScoringResult:
         recent_events = recent_events or []
         booking_events = booking_events or []
-        occurred_at = self._to_datetime(event.get("occurred_at"))
+        timestamp = self._to_datetime(event.get("timestamp"))
         action = str(event.get("action", ""))
         user_id = str(event.get("user_id", ""))
         booking_id = str(event.get("booking_id", ""))
@@ -67,7 +67,7 @@ class GamificationEngine:
 
         if points != 0:
             self._user_xp[user_id] += points
-            self._update_streak(user_id, occurred_at.date())
+            self._update_streak(user_id, timestamp.date())
 
         new_badges = self._assign_badges(user_id, action)
         return ScoringResult(
@@ -77,7 +77,7 @@ class GamificationEngine:
             points=points,
             capped=capped,
             reason=reason,
-            level=self._level_for_xp(self._user_xp[user_id]),
+            level=self.level_for_xp(self._user_xp[user_id]),
             streak_days=self._streak_days[user_id],
             new_badges=new_badges,
         )
@@ -101,21 +101,21 @@ class GamificationEngine:
             return []
 
         booking_id = str(booking_events[-1].get("booking_id", ""))
-        timestamp = self._to_datetime(booking_events[-1].get("occurred_at")).isoformat()
+        timestamp = self._to_datetime(booking_events[-1].get("timestamp")).isoformat()
         return [
             {
                 "action": COLLUSION_BONUS_ACTION,
                 "user_id": dse_users[-1],
                 "department": "DSE",
                 "booking_id": booking_id,
-                "occurred_at": timestamp,
+                "timestamp": timestamp,
             },
             {
                 "action": COLLUSION_BONUS_ACTION,
                 "user_id": finance_users[-1],
                 "department": "Finance",
                 "booking_id": booking_id,
-                "occurred_at": timestamp,
+                "timestamp": timestamp,
             },
         ]
 
@@ -125,14 +125,14 @@ class GamificationEngine:
             return False
 
         user_id = str(event.get("user_id", ""))
-        now = self._to_datetime(event.get("occurred_at"))
+        now = self._to_datetime(event.get("timestamp"))
         window_start = now - timedelta(minutes=1)
         in_window = [
             item
             for item in recent_events
             if str(item.get("user_id")) == user_id
             and str(item.get("action")) == action
-            and self._to_datetime(item.get("occurred_at")) >= window_start
+            and self._to_datetime(item.get("timestamp")) >= window_start
         ]
         return len(in_window) >= self.mass_update_cap_per_minute
 
@@ -178,5 +178,5 @@ class GamificationEngine:
         return datetime.now(tz=timezone.utc)
 
     @staticmethod
-    def _level_for_xp(xp: int) -> int:
+    def level_for_xp(xp: int) -> int:
         return max(1, (xp // 250) + 1)

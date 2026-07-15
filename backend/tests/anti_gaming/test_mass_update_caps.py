@@ -1,7 +1,7 @@
 from pathlib import Path
 
-from backend.app.engines.gamification_engine import GamificationEngine
-from backend.app.services.action_catalog_service import ActionCatalogService
+from app.engines.gamification_engine import GamificationEngine
+from app.services.action_catalog_service import ActionCatalogService
 
 
 def test_mass_update_rate_cap_applies(tmp_path: Path) -> None:
@@ -23,7 +23,7 @@ def test_mass_update_rate_cap_applies(tmp_path: Path) -> None:
             "action": "FINANCE_INFO_UPDATED",
             "user_id": "USR009",
             "booking_id": f"B-{minute_idx}",
-            "occurred_at": f"2026-07-12T10:00:0{minute_idx}Z",
+            "timestamp": f"2026-07-12T10:00:0{minute_idx}Z",
         }
         result = engine.process_event(event=event, recent_events=recent_events)
         recent_events.append(event)

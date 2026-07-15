@@ -2,7 +2,11 @@ import React from 'react';
 import { RankRow } from './RankRow';
 
 export function LeaderboardTable({ rows, scope }) {
-  return (
+
+    console.log("TABLE SCOPE:", scope);
+    console.log("TABLE ROWS:", rows);
+
+    return (
     <div className="bg-white rounded-xl shadow-sm border border-neutral-100 overflow-hidden w-full">
       <div className="overflow-x-auto">
         <table className="min-w-full divide-y divide-neutral-100">
@@ -36,6 +40,7 @@ export function LeaderboardTable({ rows, scope }) {
               </th>
             </tr>
           </thead>
+          
           <tbody className="divide-y divide-neutral-100 bg-white">
             {rows.map((row) => (
               <RankRow key={row.name} row={row} scope={scope} />

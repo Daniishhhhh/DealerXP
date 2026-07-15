@@ -7,6 +7,10 @@ import { Trophy, TrendingUp } from 'lucide-react';
 export default function LeaderboardPage() {
   const [scope, setScope] = useState('individual');
   const { data, error, loading } = useLeaderboard(scope);
+  console.log("========== LEADERBOARD PAGE ==========");
+  console.log("Scope:", scope);
+  console.log("Data:", data);
+  console.log("Rows:", data?.rows);
 
   return (
     <div className="space-y-8 animate-fade-in">
@@ -42,10 +46,18 @@ export default function LeaderboardPage() {
             </div>
             <div>
               <p className="text-sm font-bold text-neutral-800">
-                {scope === 'individual' 
-                  ? "Asha is currently in #1 place! Keep it up!" 
-                  : "Mumbai Central Branch is holding the lead!"}
-              </p>
+  {data?.rows?.length ? (
+    scope === "individual" ? (
+      `${data.rows[0].name} is currently #1!`
+    ) : scope === "branch" ? (
+      `${data.rows[0].name} Branch is currently leading!`
+    ) : (
+      `${data.rows[0].name} Department is currently leading!`
+    )
+  ) : (
+    "Loading..."
+  )}
+</p>
             </div>
           </div>
 

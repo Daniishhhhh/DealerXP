@@ -1,4 +1,4 @@
-from backend.app.services.runtime_state import get_scoring_events, leaderboard_engine
+from app.services.runtime_state import get_scoring_events, leaderboard_engine
 
 
 def test_individual_leaderboard_contract_shape() -> None:

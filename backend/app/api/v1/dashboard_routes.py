@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter
 
-from backend.app.services.runtime_state import analytics_service
+from app.services.runtime_state import analytics_service
 
 
 router = APIRouter(tags=["dashboard"])

@@ -24,7 +24,7 @@ class AnomalyDetector:
             if action not in {"FINANCE_INFO_UPDATED", "BOOKING_NOTE_ADDED", "DSE_COMMITMENTS_UPDATED"}:
                 continue
             user_id = str(event.get("user_id", ""))
-            events_by_user[user_id].append(self._to_datetime(event.get("occurred_at")))
+            events_by_user[user_id].append(self._to_datetime(event.get("timestamp")))
 
         flags: list[dict[str, Any]] = []
         for user_id, timestamps in events_by_user.items():
